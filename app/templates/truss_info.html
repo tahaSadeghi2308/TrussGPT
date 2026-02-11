@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truss Info</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/truss_info.css') }}">
+</head>
+<body>
+<div class="shell">
+    <div class="content">
+        <section>
+            <div class="header">
+                <div class="title-group">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h1>Truss configuration</h1>
+                        <span class="title-pill">interactive editor</span>
+                    </div>
+                    <p>Define nodes, elements and loads for your 2D truss model. Everything updates instantly in memory.</p>
+                </div>
+                <!-- <div class="header-actions">
+                    <a href="/">← Back to home</a>
+                </div> -->
+            </div>
+
+            <div class="tabs" id="mode-tabs">
+                <button type="button" data-mode="add-node" class="active">
+                    Add node
+                    <span class="badge">coordinates</span>
+                </button>
+                <button type="button" data-mode="add-element">
+                    Add element
+                    <span class="badge">connectivity</span>
+                </button>
+                <button type="button" data-mode="add-load">
+                    Add load
+                    <span class="badge">nodal</span>
+                </button>
+            </div>
+
+            <!-- Add node panel -->
+            <div class="panel" data-panel="add-node">
+                <div class="panel-title">
+                    <h2>Node coordinates</h2>
+                    <span>Enter X and Y and boundary conditions</span>
+                </div>
+                <form id="form-add-node" autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-row">
+                            <label for="node-x">x coordinate</label>
+                            <input id="node-x" name="x" type="number" step="any" required placeholder="e.g. 2.5">
+                            <div class="hint">Floating point value (meters, or your chosen unit).</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="node-y">y coordinate</label>
+                            <input id="node-y" name="y" type="number" step="any" required placeholder="e.g. 1.0">
+                            <div class="hint">Floating point value.</div>
+                        </div>
+                        <div class="form-row" style="grid-column: 1 / -1;">
+                            <label>Restraints</label>
+                            <div class="checkbox-row">
+                                <label>
+                                    <input id="node-ux" name="ux" type="checkbox">
+                                    Fixed in Ux
+                                </label>
+                                <label>
+                                    <input id="node-uy" name="uy" type="checkbox">
+                                    Fixed in Uy
+                                </label>
+                            </div>
+                            <div class="hint">Check if the node is restrained (supports) in the corresponding direction.</div>
+                        </div>
+                    </div>
+                    <div class="submit-row">
+                        <button type="submit" class="btn-primary">
+                            Save node
+                            <span aria-hidden="true">⟶</span>
+                        </button>
+                    </div>
+                    <div id="status-add-node" class="status" role="status"></div>
+                </form>
+            </div>
+
+            <!-- Add element panel -->
+            <div class="panel" data-panel="add-element" style="display: none;">
+                <div class="panel-title">
+                    <h2>Element connectivity</h2>
+                    <span>Connect two nodes using a material</span>
+                </div>
+                <form id="form-add-element" autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-row">
+                            <label for="element-node-i">Node i</label>
+                            <select id="element-node-i" name="node_i_id" required>
+                            </select>
+                            <div class="hint">Choose the first node of the element.</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="element-node-j">Node j</label>
+                            <select id="element-node-j" name="node_j_id" required>
+                            </select>
+                            <div class="hint">Choose a different node to connect to.</div>
+                        </div>
+                        <div class="form-row" style="grid-column: 1 / -1;">
+                            <label for="element-material">Material</label>
+                            <select id="element-material" name="material" required>
+                            </select>
+                            <div class="hint">Materials are loaded from your current truss data.</div>
+                        </div>
+                    </div>
+                    <div class="submit-row">
+                        <button type="submit" class="btn-primary">
+                            Save element
+                            <span aria-hidden="true">⟶</span>
+                        </button>
+                    </div>
+                    <div id="status-add-element" class="status" role="status"></div>
+                </form>
+            </div>
+
+            <!-- Add load panel -->
+            <div class="panel" data-panel="add-load" style="display: none;">
+                <div class="panel-title">
+                    <h2>Nodal load</h2>
+                    <span>Assign Fx, Fy to a node</span>
+                </div>
+                <form id="form-add-load" autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-row">
+                            <label for="load-node">Node</label>
+                            <select id="load-node" name="node_id" required>
+                            </select>
+                            <div class="hint">Existing nodes from your model.</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="load-fx">F<sub>x</sub></label>
+                            <input id="load-fx" name="fx" type="number" step="any" required placeholder="e.g. 0.0">
+                            <div class="hint">Horizontal force at this node.</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="load-fy">F<sub>y</sub></label>
+                            <input id="load-fy" name="fy" type="number" step="any" required placeholder="e.g. -10.0">
+                            <div class="hint">Vertical force (negative is downward, if you use that sign convention).</div>
+                        </div>
+                    </div>
+                    <div class="submit-row">
+                        <button type="submit" class="btn-primary">
+                            Save load
+                            <span aria-hidden="true">⟶</span>
+                        </button>
+                    </div>
+                    <div id="status-add-load" class="status" role="status"></div>
+                </form>
+            </div>
+        </section>
+
+        <aside>
+            <div class="secondary-panel">
+                <div class="secondary-header">
+                    <h3>
+                        Current truss data
+                    </h3>
+                    <span class="pill">live snapshot</span>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-block">
+                        <h4>Counts</h4>
+                        <div class="summary-metric">
+                            <span>Nodes</span>
+                            <span id="metric-nodes" class="value">0</span>
+                        </div>
+                        <div class="summary-metric">
+                            <span>Elements</span>
+                            <span id="metric-elements" class="value">0</span>
+                        </div>
+                        <div class="summary-metric">
+                            <span>Materials</span>
+                            <span id="metric-materials" class="value">0</span>
+                        </div>
+                    </div>
+                    <div class="summary-block">
+                        <h4>Latest changes</h4>
+                        <ul id="summary-log" class="summary-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/truss_info.js') }}"></script>
+</body>
+</html>
+
+
