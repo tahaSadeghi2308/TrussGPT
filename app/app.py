@@ -68,6 +68,11 @@ def api_add_node():
     if errors:
         return jsonify({"ok": False, "errors": errors}), 400
 
+    # check for double nodes
+    for node in nodes:
+        if node.x == x and node.y == y:
+            return jsonify({"ok": False, "errors": ["Node already exists."]}), 400
+
     next_id = (max((n.node_id for n in nodes), default=0) + 1) if nodes else 1
     node = Node(node_id=next_id, x=x, y=y, restraints={"ux": ux, "uy": uy})
     nodes.append(node)
@@ -121,7 +126,7 @@ def api_add_element():
 
     element_id = (max((e.element_id for e in elements), default=0) + 1) if elements else 1
     material = materials[material_name]
-    area = 1.0
+    area = 0.01
     element = Element(element_id=element_id, node_i=node_i, node_j=node_j, area=area, material=material)
     elements.append(element)
 
