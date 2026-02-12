@@ -4,12 +4,16 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>TrussGPT</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     </head>
     <body>
-        <h1>Welcome to my app</h1>
-        <p> please click on the button to start the chat !!!</p>
-        <a href="/truss-info">
-            <button>start</button>
-        </a>
+        <div class="content">
+            <h1>Welcome to my app</h1>
+            <p> Lorem ipsum, dolor sit amet consectetur adipisicing elit. Beatae, numquam. Eum ducimus cumque distinctio, laboriosam, consectetur dolor iusto nisi aut maiores laudantium qui, ipsam et molestias. Suscipit alias rerum numquam!</p>
+            <a href="/truss-info">
+                <button class="btn-primary">Let's Go</button>
+            </a>
+        </div>
     </body>
 </html>
