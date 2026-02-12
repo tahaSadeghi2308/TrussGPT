@@ -247,9 +247,164 @@
         }
     }
 
+    function setupGlobalActions() {
+        const btnClear = $("#btn-clear-truss");
+        const btnShowVisual = $("#btn-show-visual");
+        const btnGoChat = $("#btn-go-chat");
+        const modal = $("#visual-modal");
+        const modalClose = $("#modal-close");
+        const modalStatus = $("#modal-visual-status");
+        const img = $("#truss-image");
+
+        if (btnClear) {
+            btnClear.addEventListener("click", async () => {
+                if (!confirm("This will delete all nodes and elements in the current truss. Continue?")) {
+                    return;
+                }
+                try {
+                    const res = await fetch(API_BASE + "/api/truss/clear", {
+                        method: "POST",
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        appendLog("Failed to clear truss data.");
+                        return;
+                    }
+                    state.nodes = [];
+                    state.elements = [];
+                    updateSummary();
+                    await loadTrussData();
+                    appendLog("Cleared all truss data.");
+                } catch (err) {
+                    console.error(err);
+                    appendLog("Unexpected error while clearing truss data.");
+                }
+            });
+        }
+
+        function openModal() {
+            if (modal) {
+                modal.classList.add("visible");
+                modal.setAttribute("aria-hidden", "false");
+            }
+        }
+
+        function closeModal() {
+            if (modal) {
+                modal.classList.remove("visible");
+                modal.setAttribute("aria-hidden", "true");
+            }
+            if (modalStatus) {
+                modalStatus.classList.remove("success", "error", "visible");
+                modalStatus.textContent = "";
+            }
+        }
+
+        if (modalClose) {
+            modalClose.addEventListener("click", () => {
+                closeModal();
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener("click", (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        if (btnShowVisual) {
+            btnShowVisual.addEventListener("click", async () => {
+                openModal();
+                setStatus(modalStatus, "success", "Rendering truss...");
+                try {
+                    const res = await fetch(API_BASE + "/api/truss/plot");
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        const errors = (data && data.errors) ? data.errors.join(" ") : "Could not render truss.";
+                        setStatus(modalStatus, "error", errors);
+                        appendLog("Failed to render truss.");
+                        if (img) img.removeAttribute("src");
+                        return;
+                    }
+                    if (img) {
+                        img.src = "data:image/png;base64," + data.image_base64;
+                    }
+                    setStatus(modalStatus, "success", "Truss rendered.");
+                    appendLog("Rendered truss visualization.");
+                } catch (err) {
+                    console.error(err);
+                    setStatus(modalStatus, "error", "Unexpected error while rendering truss.");
+                    appendLog("Unexpected error while rendering truss.");
+                }
+            });
+        }
+
+        function isTrussConnected() {
+            if (!state.nodes.length || !state.elements.length) {
+                return false;
+            }
+
+            const adj = new Map();
+            for (const n of state.nodes) {
+                adj.set(n.node_id, []);
+            }
+
+            for (const e of state.elements) {
+                const i = e.node_i;
+                const j = e.node_j;
+                if (!adj.has(i) || !adj.has(j)) {
+                    continue;
+                }
+                adj.get(i).push(j);
+                adj.get(j).push(i);
+            }
+
+            // All nodes must be connected to at least one element
+            for (const n of state.nodes) {
+                const neighbors = adj.get(n.node_id) || [];
+                if (!neighbors.length) {
+                    return false;
+                }
+            }
+
+            const visited = new Set();
+            const queue = [];
+            const startId = state.nodes[0].node_id;
+            visited.add(startId);
+            queue.push(startId);
+
+            while (queue.length) {
+                const current = queue.shift();
+                const neighbors = adj.get(current) || [];
+                for (const nb of neighbors) {
+                    if (!visited.has(nb)) {
+                        visited.add(nb);
+                        queue.push(nb);
+                    }
+                }
+            }
+
+            return visited.size === state.nodes.length;
+        }
+
+        if (btnGoChat) {
+            btnGoChat.addEventListener("click", () => {
+                if (!isTrussConnected()) {
+                    alert("Your truss is not valid. The graph is not fully connected or some nodes are isolated. Please correct it before going to chat.");
+                    appendLog("Blocked navigation to chat because truss is not connected.");
+                    return;
+                }
+                window.location.href = "/chat";
+            });
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         setupTabs();
         setupForms();
+        setupGlobalActions();
         loadTrussData();
     });
 })();

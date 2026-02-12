@@ -18,9 +18,6 @@
                     </div>
                     <p>Define nodes, elements and loads for your 2D truss model. Everything updates instantly in memory.</p>
                 </div>
-                <!-- <div class="header-actions">
-                    <a href="/">← Back to home</a>
-                </div> -->
             </div>
 
             <div class="tabs" id="mode-tabs">
@@ -184,9 +181,31 @@
                     </div>
                 </div>
             </div>
+            <div class="header-actions">
+                <button type="button" id="btn-show-visual" class="btn-secondary">Show truss visually</button>
+                <button type="button" id="btn-clear-truss" class="btn-danger">Delete all</button>
+                <button type="button" id="btn-go-chat" class="btn-primary">
+                    Go to chat
+                    <span aria-hidden="true">⟶</span>
+                </button>
+            </div>
         </aside>
     </div>
 </div>
+
+<div id="visual-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Truss visualization</h3>
+            <button type="button" id="modal-close" class="modal-close" aria-label="Close visualization">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="modal-visual-status" class="status" role="status"></div>
+            <img id="truss-image" alt="Rendered truss" />
+        </div>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/truss_info.js') }}"></script>
 </body>
 </html>

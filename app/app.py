@@ -3,6 +3,14 @@ from flask import Flask, render_template, request, jsonify
 from app.logic.models import Node, Element
 from app.logic.truss_data import materials, nodes, elements
 
+import io
+import base64
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -193,9 +201,101 @@ def api_add_load():
         }
     )
 
+
+@app.route("/api/truss/clear", methods=["POST"])
+def api_truss_clear():
+    """Delete all nodes and elements (reset current truss)."""
+    nodes.clear()
+    elements.clear()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/truss/plot", methods=["GET"])
+def api_truss_plot():
+    """Render the current truss to a PNG image and return it as base64."""
+    if not nodes and not elements:
+        return jsonify({"ok": False, "errors": ["No truss data to visualize. Add nodes and elements first."]}), 400
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=160)
+
+    for e in elements:
+        x_vals = [e.node_i.x, e.node_j.x]
+        y_vals = [e.node_i.y, e.node_j.y]
+        ax.plot(x_vals, y_vals, "-o", color="#38bdf8", linewidth=2.0, markersize=5)
+        mid_x = 0.5 * (e.node_i.x + e.node_j.x)
+        mid_y = 0.5 * (e.node_i.y + e.node_j.y)
+        ax.text(mid_x, mid_y, f"E{e.element_id}", color="#e5e7eb", fontsize=7, ha="center", va="center")
+
+    for n in nodes:
+        ax.scatter(n.x, n.y, s=35, color="#f97316", zorder=5)
+        ax.text(n.x, n.y, f"N{n.node_id}", color="#e5e7eb", fontsize=7, ha="left", va="bottom")
+
+        fx = float(n.loads.get("fx", 0.0))
+        fy = float(n.loads.get("fy", 0.0))
+        scale = 0.15
+        if fy != 0.0:
+            # fy arrow
+            ax.arrow(
+                n.x,
+                n.y,
+                0,
+                scale * fy,
+                head_width=0.08,
+                head_length=0.12,
+                length_includes_head=True,
+                color="#f97373",
+            )
+            fy_mid = (scale * fy + n.y) * 0.5 
+            ax.text(n.x, fy_mid, f"{fy}N", color="#e5e7eb", fontsize=7, ha="center", va="center")
+        
+        if fy != 0.0:
+            # fx arrow
+            ax.arrow(
+                n.x,
+                n.y,
+                scale * fx,
+                0,
+                head_width=0.08,
+                head_length=0.12,
+                length_includes_head=True,
+                color="#f97373",
+            )
+            fx_mid = 0.5 * (n.x + scale * fx)
+            ax.text(fx_mid, n.y, f"{fx}N", color="#e5e7eb", fontsize=7, ha="center", va="center")
+
+
+    if nodes:
+        xs = [n.x for n in nodes]
+        ys = [n.y for n in nodes]
+        x_margin = max(1.0, 0.15 * (max(xs) - min(xs) or 1.0))
+        y_margin = max(1.0, 0.15 * (max(ys) - min(ys) or 1.0))
+        ax.set_xlim(min(xs) - x_margin, max(xs) + x_margin)
+        ax.set_ylim(min(ys) - y_margin, max(ys) + y_margin)
+
+    ax.set_aspect("equal", adjustable="datalim")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_title("Truss visualization", color="#e5e7eb", fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.35)
+    ax.set_facecolor("#020617")
+    fig.patch.set_facecolor("#020617")
+
+    for spine in ax.spines.values():
+        spine.set_color("#4b5563")
+
+    buf = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    image_bytes = buf.read()
+    image_b64 = base64.b64encode(image_bytes).decode("ascii")
+
+    return jsonify({"ok": True, "image_base64": image_b64})
+
 @app.route("/chat")
 def chat():
-    pass
+    return "hi from chat !!"
 
 if __name__== "__main__":
     app.run(debug=True)
