@@ -1,11 +1,8 @@
 from flask import Flask, render_template, request, jsonify
-
 from app.logic.models import Node, Element
 from app.logic.truss_data import materials, nodes, elements
-
 import io
 import base64
-
 import matplotlib
 
 matplotlib.use("Agg")
@@ -58,7 +55,6 @@ def api_add_node():
     data = request.get_json(silent=True) or {}
     errors = []
 
-    # Validate coordinates
     try:
         x = float(data.get("x", ""))
     except (TypeError, ValueError):
@@ -69,14 +65,12 @@ def api_add_node():
     except (TypeError, ValueError):
         errors.append("y must be a floating point number.")
 
-    # Validate restraints (treat anything truthy == True)
     ux = bool(data.get("ux", False))
     uy = bool(data.get("uy", False))
 
     if errors:
         return jsonify({"ok": False, "errors": errors}), 400
 
-    # check for double nodes
     for node in nodes:
         if node.x == x and node.y == y:
             return jsonify({"ok": False, "errors": ["Node already exists."]}), 400
@@ -103,10 +97,6 @@ def api_add_node():
 
 @app.route("/api/elements", methods=["POST"])
 def api_add_element():
-    """Add a new element between two nodes with a selected material.
-
-    Area is currently fixed to 1.0 for simplicity.
-    """
     data = request.get_json(silent=True) or {}
     errors = []
 
@@ -295,7 +285,29 @@ def api_truss_plot():
 
 @app.route("/chat")
 def chat():
-    return "hi from chat !!"
+    return render_template("chat.html")
+
+
+@app.route("/api/chat/req", methods=["POST"])
+def api_chat_req():
+    """Handle chat request from user."""
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "").strip()
+    
+    if not message:
+        return jsonify({"ok": False, "errors": ["Message cannot be empty."]}), 400
+
+    return jsonify({
+        "ok": True,
+        "response": f"Received your message: {message}."
+    })
+
+
+@app.route("/api/chat/res", methods=["POST"])
+def api_chat_res():
+    """Handle chat response processing (if needed for two-way communication)."""
+    data = request.get_json(silent=True) or {}
+    return jsonify({"ok": True, "message": "Response processed."})
 
 if __name__== "__main__":
     app.run(debug=True)

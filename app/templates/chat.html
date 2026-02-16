@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - TrussGPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/truss_info.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+</head>
+<body>
+<div class="shell">
+    <div class="content">
+        <section>
+            <div class="header">
+                <div class="title-group">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h1>Chat</h1>
+                    </div>
+                    <p>Ask questions about your truss model and get intelligent responses.</p>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message system">
+                        <div class="message-content">
+                            <p>Welcome! Start a conversation about your truss model.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <form id="chat-form" autocomplete="off">
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="chat-input" 
+                                name="message" 
+                                placeholder="Type your message here..." 
+                                autocomplete="off"
+                                required
+                            />
+                            <button type="submit" class="btn-primary" id="send-btn">
+                                Send
+                                <span aria-hidden="true">⟶</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="chat-status" class="status" role="status"></div>
+                </div>
+            </div>
+        </section>
+<!-- 
+        <aside>
+            <div class="secondary-panel">
+                <div class="secondary-header">
+                    <h3>Truss Summary</h3>
+                    <span class="pill">current model</span>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-block">
+                        <h4>Counts</h4>
+                        <div class="summary-metric">
+                            <span>Nodes</span>
+                            <span id="metric-nodes" class="value">0</span>
+                        </div>
+                        <div class="summary-metric">
+                            <span>Elements</span>
+                            <span id="metric-elements" class="value">0</span>
+                        </div>
+                        <div class="summary-metric">
+                            <span>Materials</span>
+                            <span id="metric-materials" class="value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside> -->
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
+
