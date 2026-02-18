@@ -248,6 +248,7 @@
     }
 
     function setupGlobalActions() {
+        const btnLoadDefault = $("#btn-load-default");
         const btnClear = $("#btn-clear-truss");
         const btnShowVisual = $("#btn-show-visual");
         const btnGoChat = $("#btn-go-chat");
@@ -255,6 +256,40 @@
         const modalClose = $("#modal-close");
         const modalStatus = $("#modal-visual-status");
         const img = $("#truss-image");
+
+        if (btnLoadDefault) {
+            btnLoadDefault.addEventListener("click", async () => {
+                if (state.nodes.length > 0 || state.elements.length > 0) {
+                    if (!confirm("This will replace all current truss data with default test data. Continue?")) {
+                        return;
+                    }
+                }
+                btnLoadDefault.disabled = true;
+                btnLoadDefault.textContent = "Loading...";
+                try {
+                    const res = await fetch(API_BASE + "/api/truss/load-default", {
+                        method: "POST",
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        const errors = (data && data.errors) ? data.errors.join(" ") : "Could not load default data.";
+                        appendLog("Failed to load default data: " + errors);
+                        btnLoadDefault.disabled = false;
+                        btnLoadDefault.textContent = "Load test data";
+                        return;
+                    }
+                    await loadTrussData();
+                    appendLog("Loaded default test truss (3 nodes, 3 elements, with load).");
+                    btnLoadDefault.disabled = false;
+                    btnLoadDefault.textContent = "Load test data";
+                } catch (err) {
+                    console.error(err);
+                    appendLog("Unexpected error while loading default data.");
+                    btnLoadDefault.disabled = false;
+                    btnLoadDefault.textContent = "Load test data";
+                }
+            });
+        }
 
         if (btnClear) {
             btnClear.addEventListener("click", async () => {
@@ -390,13 +425,41 @@
         }
 
         if (btnGoChat) {
-            btnGoChat.addEventListener("click", () => {
+            btnGoChat.addEventListener("click", async () => {
                 if (!isTrussConnected()) {
                     alert("Your truss is not valid. The graph is not fully connected or some nodes are isolated. Please correct it before going to chat.");
                     appendLog("Blocked navigation to chat because truss is not connected.");
                     return;
                 }
-                window.location.href = "/chat";
+                
+                // Calculate and save truss before going to chat
+                btnGoChat.disabled = true;
+                btnGoChat.textContent = "Calculating...";
+                
+                try {
+                    const res = await fetch(API_BASE + "/api/truss/calculate", {
+                        method: "POST",
+                    });
+                    const data = await res.json();
+                    
+                    if (!res.ok || !data.ok) {
+                        const errors = (data && data.errors) ? data.errors.join(" ") : "Could not calculate truss.";
+                        alert("Error calculating truss: " + errors);
+                        appendLog("Failed to calculate truss before going to chat.");
+                        btnGoChat.disabled = false;
+                        btnGoChat.innerHTML = "Go to chat <span aria-hidden=\"true\">⟶</span>";
+                        return;
+                    }
+                    
+                    appendLog("Truss calculated successfully. Navigating to chat...");
+                    window.location.href = "/chat";
+                } catch (err) {
+                    console.error(err);
+                    alert("Error calculating truss: " + err.message);
+                    appendLog("Unexpected error while calculating truss.");
+                    btnGoChat.disabled = false;
+                    btnGoChat.innerHTML = "Go to chat <span aria-hidden=\"true\">⟶</span>";
+                }
             });
         }
     }

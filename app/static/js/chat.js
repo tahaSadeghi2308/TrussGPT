@@ -143,7 +143,46 @@
             }
 
             const responseText = data.response || "No response received.";
-            addMessage(responseText, "api");
+            
+            // If there's an image URL, add it to the message
+            if (data.image_url) {
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "message api";
+                
+                const contentDiv = document.createElement("div");
+                contentDiv.className = "message-content";
+                
+                const textP = document.createElement("p");
+                textP.textContent = responseText;
+                contentDiv.appendChild(textP);
+                
+                // Add image if URL is provided
+                const imgLink = document.createElement("a");
+                imgLink.href = data.image_url;
+                imgLink.target = "_blank";
+                imgLink.textContent = "View Truss Image";
+                imgLink.style.color = "var(--accent)";
+                imgLink.style.textDecoration = "underline";
+                imgLink.style.marginTop = "8px";
+                imgLink.style.display = "inline-block";
+                contentDiv.appendChild(imgLink);
+                
+                messageDiv.appendChild(contentDiv);
+                
+                const timestamp = document.createElement("div");
+                timestamp.className = "message-timestamp";
+                timestamp.textContent = formatTimestamp();
+                messageDiv.appendChild(timestamp);
+                
+                const messagesContainer = $("#chat-messages");
+                if (messagesContainer) {
+                    messagesContainer.appendChild(messageDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            } else {
+                addMessage(responseText, "api");
+            }
+            
             setStatus(statusEl, "success", "");
 
         } catch (err) {
