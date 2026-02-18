@@ -57,7 +57,7 @@ def apply_boundary_conditions(K, F, nodes):
 def solve_displacements(K, F):
     try:
         det = np.linalg.det(K)
-        if abs(det) < 1e-10:  # Very small determinant indicates singular matrix
+        if abs(det) < 1e-10: 
             raise ValueError(
                 "Stiffness matrix is singular (determinant ≈ 0). "
                 "This usually means the truss structure is not properly constrained. "
@@ -138,9 +138,8 @@ def check_element_failure(elements, forces):
 def plot_truss(nodes, elements, displacements, forces, scale=100, filepath=None):
     import matplotlib.pyplot as plt
     
-    fig, ax = plt.subplots(figsize=(10, 8))
+    _, ax = plt.subplots(figsize=(10, 8))
 
-    # Original undeformed shape
     for elem in elements:
         xi, yi = elem.node_i.x, elem.node_i.y
         xj, yj = elem.node_j.x, elem.node_j.y
@@ -165,7 +164,6 @@ def plot_truss(nodes, elements, displacements, forces, scale=100, filepath=None)
 
         ax.plot([xi, xj], [yi, yj], color=color, linewidth=4)
 
-    # Colorbar
     sm = cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax)
@@ -173,7 +171,6 @@ def plot_truss(nodes, elements, displacements, forces, scale=100, filepath=None)
         "Axial Force (N)\n(Positive = Tension, Negative = Compression)", fontsize=12
     )
     
-
     ax.set_aspect("equal")
     ax.set_xlabel("X (m)")
     ax.set_ylabel("Y (m)")
