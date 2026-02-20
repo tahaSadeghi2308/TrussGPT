@@ -1,5 +1,6 @@
 (function () {
     const API_BASE = "";
+    const STORAGE_KEY = "trussgpt_chat_history_v1";
 
     const state = {
         trussData: {
@@ -7,6 +8,7 @@
             elements: [],
             materials: [],
         },
+        conversation: [], // { role: "user"|"assistant", content: string }
     };
 
     function $(selector) {
@@ -56,6 +58,54 @@
 
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function saveConversation() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversation));
+        } catch (e) {
+            // ignore storage failures
+        }
+    }
+
+    function loadConversation() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                state.conversation = parsed
+                    .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+                    .slice(-40);
+            }
+        } catch (e) {
+            state.conversation = [];
+        }
+    }
+
+    function renderConversation() {
+        const messagesContainer = $("#chat-messages");
+        if (!messagesContainer) return;
+        messagesContainer.innerHTML = "";
+
+        // Always start with the welcome system message
+        const systemDiv = document.createElement("div");
+        systemDiv.className = "message system";
+        const systemContent = document.createElement("div");
+        systemContent.className = "message-content";
+        const p = document.createElement("p");
+        p.textContent = "Welcome! Start a conversation about your truss model.";
+        systemContent.appendChild(p);
+        systemDiv.appendChild(systemContent);
+        messagesContainer.appendChild(systemDiv);
+
+        for (const m of state.conversation) {
+            if (m.role === "user") {
+                addMessage(m.content, "user");
+            } else if (m.role === "assistant") {
+                addMessage(m.content, "api");
+            }
+        }
     }
 
     function showTypingIndicator() {
@@ -120,7 +170,12 @@
         sendBtn.disabled = true;
         setStatus(statusEl, "success", "");
 
+        // Send prior chat history along with the current message
+        const historyToSend = state.conversation.slice(-20);
+
         addMessage(message, "user");
+        state.conversation.push({ role: "user", content: message });
+        saveConversation();
 
         showTypingIndicator();
 
@@ -128,7 +183,7 @@
             const res = await fetch(API_BASE + "/api/chat/req", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: message }),
+                body: JSON.stringify({ message: message, history: historyToSend }),
             });
 
             removeTypingIndicator();
@@ -182,6 +237,9 @@
             } else {
                 addMessage(responseText, "api");
             }
+
+            state.conversation.push({ role: "assistant", content: responseText });
+            saveConversation();
             
             setStatus(statusEl, "success", "");
 
@@ -223,6 +281,8 @@
     document.addEventListener("DOMContentLoaded", () => {
         setupChatForm();
         loadTrussData();
+        loadConversation();
+        renderConversation();
         const chatInput = $("#chat-input");
         if (chatInput) {
             chatInput.focus();
