@@ -264,6 +264,15 @@ def api_truss_plot():
 
     fig, ax = plt.subplots(figsize=(6, 4), dpi=160)
 
+    if nodes:
+        xs = [n.x for n in nodes]
+        ys = [n.y for n in nodes]
+        span_x = max(xs) - min(xs) if len(xs) > 1 else 1.0
+        span_y = max(ys) - min(ys) if len(ys) > 1 else 1.0
+        span = max(span_x, span_y, 1.0)
+    else:
+        xs, ys, span = [], [], 1.0
+
     for e in elements:
         x_vals = [e.node_i.x, e.node_j.x]
         y_vals = [e.node_i.y, e.node_j.y]
@@ -276,9 +285,63 @@ def api_truss_plot():
         ax.scatter(n.x, n.y, s=35, color="#f97316", zorder=5)
         ax.text(n.x, n.y, f"N{n.node_id}", color="#e5e7eb", fontsize=7, ha="left", va="bottom")
 
+        fx = float(n.loads.get("fx", 0.0))
+        fy = float(n.loads.get("fy", 0.0))
+        arrow_len = 0.08 * span
+        head_w = 0.03 * span
+        head_l = 0.04 * span
+
+        if fx != 0.0:
+            direction_x = 1.0 if fx > 0 else -1.0
+            ax.arrow(
+                n.x,
+                n.y,
+                direction_x * arrow_len,
+                0.0,
+                head_width=head_w,
+                head_length=head_l,
+                length_includes_head=True,
+                color="#f97373",
+                zorder=6,
+            )
+            text_x = n.x + direction_x * arrow_len * 1.3
+            text_y = n.y + 0.04 * span
+            ax.text(
+                text_x,
+                text_y,
+                f"Fx={fx:.1f}",
+                color="#fecaca",
+                fontsize=7,
+                ha="center",
+                va="bottom",
+            )
+
+        if fy != 0.0:
+            direction_y = 1.0 if fy > 0 else -1.0
+            ax.arrow(
+                n.x,
+                n.y,
+                0.0,
+                direction_y * arrow_len,
+                head_width=head_w,
+                head_length=head_l,
+                length_includes_head=True,
+                color="#f97373",
+                zorder=6,
+            )
+            text_x = n.x + 0.02 * span
+            text_y = n.y + direction_y * arrow_len * 1.3
+            ax.text(
+                text_x,
+                text_y,
+                f"Fy={fy:.1f}",
+                color="#fecaca",
+                fontsize=7,
+                ha="left",
+                va="center",
+            )
+
     if nodes:
-        xs = [n.x for n in nodes]
-        ys = [n.y for n in nodes]
         x_margin = max(1.0, 0.15 * (max(xs) - min(xs) or 1.0))
         y_margin = max(1.0, 0.15 * (max(ys) - min(ys) or 1.0))
         ax.set_xlim(min(xs) - x_margin, max(xs) + x_margin)

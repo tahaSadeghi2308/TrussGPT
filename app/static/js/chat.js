@@ -8,7 +8,7 @@
             elements: [],
             materials: [],
         },
-        conversation: [], // { role: "user"|"assistant", content: string }
+        conversation: [],
     };
 
     function $(selector) {
