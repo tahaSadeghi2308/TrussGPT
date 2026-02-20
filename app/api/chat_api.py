@@ -1,16 +1,15 @@
 from flask import Blueprint, request, jsonify
-import os, json
+import json
 from openai import OpenAI
 from pathlib import Path
-from app.config import SECRET_KEY
+
+from app.config import SECRET_KEY, BASE_URL
 
 chat_bp = Blueprint("chat", __name__)
 
 LOGIC_FOLDER = Path(__file__).parent.parent / "logic"
 RESULTS_FILE = LOGIC_FOLDER / "truss_results.json"
 IMAGE_FILE = LOGIC_FOLDER / "truss_deformation.png"
-
-client = OpenAI(api_key=SECRET_KEY)
 
 @chat_bp.route("/api/chat/req", methods=["POST"])
 def api_chat_req():
@@ -22,12 +21,15 @@ def api_chat_req():
         return jsonify({"ok": False, "errors": ["Message cannot be empty."]}), 400
 
     calculation_context = ""
+    raw_results = None
     image_url = None
 
+    # collect data for answers
     if RESULTS_FILE.exists():
         try:
             with open(RESULTS_FILE, "r") as f:
                 results = json.load(f)
+            raw_results = results
 
             calc_summary = ["Truss Calculation Results:\n"]
 
@@ -74,13 +76,22 @@ def api_chat_req():
             })
 
     system_prompt = (
-        "You are a helpful assistant specialized in structural engineering and truss analysis. "
-        "You help users understand their truss calculation results, including displacements, "
-        "forces, stresses, and failure analysis. Be concise, technical, and helpful."
+        "You are a helpful assistant specialized in structural engineering and truss analysis.\n"
+        "CRITICAL RULES:\n"
+        "- Answer ONLY using the provided truss calculation JSON data.\n"
+        "- If the data is missing or insufficient, say you cannot answer and tell the user to calculate the truss first.\n"
+        "- Do not invent nodes/elements/forces/stresses that are not in the data.\n"
+        "- Keep responses concise, technical, and helpful.\n"
     )
 
     user_prompt = message
-    if calculation_context:
+    if raw_results is not None:
+        user_prompt = (
+            "Here is the truss calculation JSON (authoritative):\n"
+            f"{json.dumps(raw_results, ensure_ascii=False)}\n\n"
+            f"User question: {message}"
+        )
+    elif calculation_context:
         user_prompt = f"{calculation_context}\n\nUser question: {message}"
 
     if not SECRET_KEY:
@@ -90,15 +101,29 @@ def api_chat_req():
         response_text += "Note: AI API key not configured. Please set AI_API_KEY in your environment."
         return jsonify({"ok": True, "response": response_text})
 
+    if raw_results is None:
+        return jsonify(
+            {
+                "ok": True,
+                "response": (
+                    "I don't have `truss_results.json` yet, so I can't answer based on your truss.\n"
+                    "Please go to the truss page and calculate first (Go to chat), then ask again."
+                ),
+            }
+        )
+
     try:
-        ai_response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        # GAPGPT (OpenAI-compatible) client
+        gap_client = OpenAI(base_url=BASE_URL, api_key=SECRET_KEY)
+
+        ai_response = gap_client.chat.completions.create(
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
-            temperature=0.7,
-            max_tokens=1000
+            temperature=0.2,
+            max_tokens=1000,
         )
 
         ai_message = ai_response.choices[0].message.content or "No response from AI."
