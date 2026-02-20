@@ -278,8 +278,46 @@
         });
     }
 
+    function setupLogout() {
+        const logoutBtn = $("#logout-btn");
+        if (!logoutBtn) return;
+
+        logoutBtn.addEventListener("click", async function() {
+            if (!confirm("Are you sure you want to logout? This will reset all project data.")) {
+                return;
+            }
+
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = "Logging out...";
+
+            try {
+                const response = await fetch("/api/logout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.ok) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    window.location.href = "/login";
+                } else {
+                    alert("Logout failed. Please try again.");
+                    logoutBtn.disabled = false;
+                    logoutBtn.textContent = "Logout";
+                }
+            } catch (error) {
+                console.error("Logout error:", error);
+                alert("Network error during logout. Please try again.");
+                logoutBtn.disabled = false;
+                logoutBtn.textContent = "Logout";
+            }
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         setupChatForm();
+        setupLogout();
         loadTrussData();
         loadConversation();
         renderConversation();
