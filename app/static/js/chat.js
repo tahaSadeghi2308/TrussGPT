@@ -29,6 +29,69 @@
         return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
+    function renderMarkdown(mdText) {
+        let processedText = renderLatex(mdText);
+        const rawHtml = marked.parse(processedText);
+        const cleanHtml = DOMPurify.sanitize(rawHtml);
+        return cleanHtml;
+    }
+
+    function renderLatex(text) {
+        if (typeof katex === 'undefined') {
+            return text;
+        }
+        
+        text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(match, latex) {
+            try {
+                return katex.renderToString(latex.trim(), {
+                    displayMode: true,
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        text = text.replace(/\$([^\$\n]+?)\$/g, function(match, latex) {
+            try {
+                return katex.renderToString(latex.trim(), {
+                    displayMode: false,
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(match, latex) {
+            try {
+                return katex.renderToString(latex.trim(), {
+                    displayMode: false,
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(match, latex) {
+            try {
+                return katex.renderToString(latex.trim(), {
+                    displayMode: true,
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        return text;
+    }
+
     function addMessage(content, type, showTimestamp = true) {
         const messagesContainer = $("#chat-messages");
         if (!messagesContainer) return;
@@ -40,9 +103,7 @@
         contentDiv.className = "message-content";
 
         if (typeof content === "string") {
-            const p = document.createElement("p");
-            p.textContent = content;
-            contentDiv.appendChild(p);
+            contentDiv.innerHTML = renderMarkdown(content);
         } else {
             contentDiv.appendChild(content);
         }
@@ -63,9 +124,7 @@
     function saveConversation() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversation));
-        } catch (e) {
-            // ignore storage failures
-        }
+        } catch (e) {}
     }
 
     function loadConversation() {
@@ -88,7 +147,6 @@
         if (!messagesContainer) return;
         messagesContainer.innerHTML = "";
 
-        // Always start with the welcome system message
         const systemDiv = document.createElement("div");
         systemDiv.className = "message system";
         const systemContent = document.createElement("div");
@@ -207,9 +265,10 @@
                 const contentDiv = document.createElement("div");
                 contentDiv.className = "message-content";
                 
-                const textP = document.createElement("p");
-                textP.textContent = responseText;
-                contentDiv.appendChild(textP);
+                // Use innerHTML with renderMarkdown to properly render LaTeX and markdown
+                const textDiv = document.createElement("div");
+                textDiv.innerHTML = renderMarkdown(responseText);
+                contentDiv.appendChild(textDiv);
                 
                 // Add image if URL is provided
                 const imgLink = document.createElement("a");
