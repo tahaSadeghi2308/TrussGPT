@@ -64,6 +64,14 @@ def api_chat_req():
                     f"  Node {disp['node_id']}: ux = {disp['ux']:.6e} m, uy = {disp['uy']:.6e} m"
                 )
 
+            calc_summary.append("\nElement Properties:")
+            for eid, elem_data in results.get("elements", {}).items():
+                calc_summary.append(
+                    f"  Element {eid}: Area = {elem_data['area']:.6e} m², "
+                    f"Length = {elem_data['length']:.4f} m, Material = {elem_data['material']}, "
+                    f"E = {elem_data['young_modulus']:.2e} Pa"
+                )
+
             calc_summary.append("\nElement Forces:")
             for eid, force_data in results.get("forces", {}).items():
                 calc_summary.append(

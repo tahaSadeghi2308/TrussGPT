@@ -123,12 +123,18 @@ def api_add_element():
     if node_i is None or node_j is None:
         errors.append("Both node_i and node_j must be existing nodes.")
 
+    try:
+        area = float(data.get("area", ""))
+        if area <= 0:
+            errors.append("Area must be a positive number.")
+    except (TypeError, ValueError):
+        errors.append("Area must be a valid floating point number.")
+
     if errors:
         return jsonify({"ok": False, "errors": errors}), 400
 
     element_id = (max((e.element_id for e in elements), default=0) + 1) if elements else 1
     material = materials[material_name]
-    area = 0.01
     element = Element(element_id=element_id, node_i=node_i, node_j=node_j, area=area, material=material)
     elements.append(element)
 
@@ -417,10 +423,22 @@ def api_truss_calculate():
                 "status": r["status"]
             }
 
+        elements_data = {}
+        for elem in elements:
+            elements_data[int(elem.element_id)] = {
+                "node_i": elem.node_i.node_id,
+                "node_j": elem.node_j.node_id,
+                "area": float(elem.area),
+                "material": elem.material.name,
+                "length": float(elem.length()),
+                "young_modulus": float(elem.material.E),
+            }
+
         truss_results = {
             "displacements": displacements_data,
             "forces": forces_data,
             "element_results": results_data,
+            "elements": elements_data,
         }
         
         with open(RESULTS_FILE, "w") as f:

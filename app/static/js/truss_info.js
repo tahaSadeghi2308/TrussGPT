@@ -167,9 +167,10 @@
                     node_i_id: formData.get("node_i_id"),
                     node_j_id: formData.get("node_j_id"),
                     material: formData.get("material"),
+                    area: formData.get("area"),
                 };
-                if (!payload.node_i_id || !payload.node_j_id || !payload.material) {
-                    setStatus(statusAddElement, "error", "Please choose both nodes and a material.");
+                if (!payload.node_i_id || !payload.node_j_id || !payload.material || !payload.area) {
+                    setStatus(statusAddElement, "error", "Please choose both nodes, a material, and enter an area.");
                     return;
                 }
                 try {
